@@ -12,7 +12,7 @@ use actix_web::middleware::DefaultHeaders;
 use listenfd::ListenFd;
 use qango::board::Board;
 use qango::player::Player;
-use qango::player::deep::Deep;
+use qango::player::simple::Simple;
 use res::JsonBoard;
 
 
@@ -51,7 +51,7 @@ async fn turn(info : Path<(u64, usize)>) -> HttpResponse {
 async fn ai_turn(info : Path<u64>) -> HttpResponse {
     match Board::decode(*info) {
         Ok(b) => {
-            let pos = Deep::new(0).turn(&b);
+            let pos = Simple::new(Box::from("easy")).turn(&b);
             let next_id : u64 = b.turn(pos).into();
             let url = format!("/board/{}",next_id);
 

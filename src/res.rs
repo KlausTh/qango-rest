@@ -1,6 +1,7 @@
 
 use qango::board::Board;
 use qango::board::side::Side;
+use actix_http::http::header::Accept;
 use actix_web::{Error, HttpRequest, HttpResponse, Responder};
 use serde_json;
 use futures::future::{ready, Ready};
@@ -76,7 +77,7 @@ mod test {
 		let json = serde_json::to_string(&JsonBoard(qango::board::START)).unwrap();
 
 		assert_eq!(json,
-			repeat("\"none\"").take(35).fold(String::from("{\"won\":\"none\",\"next\":\"white\",\"field\":[\"none\""), |a, n| a + "," + n)
+			repeat("\"none\"").take(35).fold(String::from("{\"id\":0,\"won\":\"none\",\"winning_fields\":[],\"next\":\"white\",\"field\":[\"none\""), |a, n| a + "," + n)
 			 + "]}");
 	}
 }

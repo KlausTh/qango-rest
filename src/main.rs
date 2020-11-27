@@ -15,10 +15,11 @@ use qango::player::Player;
 use qango::player::simple::Simple;
 use res::JsonBoard;
 
+static aiplayer = Simple::new(Box::from("easy"));
 
 #[get("/version")]
 async fn version() -> HttpResponse {
-    HttpResponse::Ok().body("{\"version\": \"0.1\"}")
+    HttpResponse::Ok().body("{\"version\": \"0.2\"}")
 }
 
 #[get("/start")]
@@ -51,7 +52,7 @@ async fn turn(info : Path<(u64, usize)>) -> HttpResponse {
 async fn ai_turn(info : Path<u64>) -> HttpResponse {
     match Board::decode(*info) {
         Ok(b) => {
-            let pos = Simple::new(Box::from("easy")).turn(&b);
+            let pos = aiplayer.turn(&b);
             let next_id : u64 = b.turn(pos).into();
             let url = format!("/board/{}",next_id);
 

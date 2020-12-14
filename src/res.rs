@@ -1,7 +1,6 @@
 
 use qango::board::Board;
 use qango::board::side::Side;
-use actix_http::http::header::Accept;
 use actix_web::{Error, HttpRequest, HttpResponse, Responder};
 use serde_json;
 use futures::future::{ready, Ready};

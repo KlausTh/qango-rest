@@ -1,3 +1,4 @@
+
 extern crate actix_web;
 extern crate listenfd;
 extern crate qango;
@@ -6,16 +7,15 @@ extern crate futures;
 
 mod res;
 
+use actix_files::Files;
 use actix_web::{get, App, HttpResponse, HttpServer};
 use actix_web::web::Path;
-use actix_web::middleware::DefaultHeaders;
+use actix_web::middleware::{Logger, DefaultHeaders};
 use listenfd::ListenFd;
 use qango::board::Board;
 use qango::player::Player;
 use qango::player::simple::Simple;
 use res::JsonBoard;
-
-static aiplayer = Simple::new(Box::from("easy"));
 
 #[get("/version")]
 async fn version() -> HttpResponse {
@@ -37,7 +37,7 @@ async fn board(info : Path<u64>) -> HttpResponse {
 
 #[get("/board/{id}/turn/{pos}")]
 async fn turn(info : Path<(u64, usize)>) -> HttpResponse {
-    match Board::decode(info.0) {
+    match Board::decode(info.0.0) {
         Ok(b) => {
             let next : u64 = b.turn(info.1).into();
             let url = format!("/board/{}", next);
@@ -52,7 +52,8 @@ async fn turn(info : Path<(u64, usize)>) -> HttpResponse {
 async fn ai_turn(info : Path<u64>) -> HttpResponse {
     match Board::decode(*info) {
         Ok(b) => {
-            let pos = aiplayer.turn(&b);
+            let player = Simple::new(Box::from("easy"));
+            let pos = player.turn(&b);
             let next_id : u64 = b.turn(pos).into();
             let url = format!("/board/{}",next_id);
 
@@ -62,17 +63,19 @@ async fn ai_turn(info : Path<u64>) -> HttpResponse {
     }
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let mut listenfd = ListenFd::from_env();
     let mut server = HttpServer::new(|| {
         App::new()
+            .wrap(Logger::default())
             .wrap(DefaultHeaders::new().header("Access-Control-Allow-Origin", "*"))
             .service(version)
             .service(start)
             .service(board)
             .service(ai_turn)
             .service(turn)
+            .service(Files::new("/", "./client/").index_file("index.html"))
     });
 
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {

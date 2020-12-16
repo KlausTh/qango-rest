@@ -1,6 +1,6 @@
 
 extern crate actix_web;
-extern crate listenfd;
+extern crate env_logger;
 extern crate qango;
 extern crate serde;
 extern crate futures;
@@ -11,7 +11,7 @@ use actix_files::Files;
 use actix_web::{get, App, HttpResponse, HttpServer};
 use actix_web::web::Path;
 use actix_web::middleware::{Logger, DefaultHeaders};
-use listenfd::ListenFd;
+use env_logger::Env;
 use qango::board::Board;
 use qango::player::Player;
 use qango::player::simple::Simple;
@@ -65,8 +65,9 @@ async fn ai_turn(info : Path<u64>) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let mut listenfd = ListenFd::from_env();
-    let mut server = HttpServer::new(|| {
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+
+    let server = HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
             .wrap(DefaultHeaders::new().header("Access-Control-Allow-Origin", "*"))
@@ -78,11 +79,5 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/", "./client/").index_file("index.html"))
     });
 
-    server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
-        server.listen(l)?
-    } else {
-        server.bind("127.0.0.1:8080")?
-    };
-
-    server.run().await
+    server.bind("0.0.0.0:8080")?.run().await
 }

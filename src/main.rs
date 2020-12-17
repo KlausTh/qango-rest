@@ -14,12 +14,14 @@ use actix_web::middleware::{Logger, DefaultHeaders};
 use env_logger::Env;
 use qango::board::Board;
 use qango::player::Player;
+use qango::player::random::Random;
 use qango::player::simple::Simple;
+use qango::player::deep::Deep;
 use res::JsonBoard;
 
 #[get("/version")]
 async fn version() -> HttpResponse {
-    HttpResponse::Ok().body("{\"version\": \"0.2\"}")
+    HttpResponse::Ok().body("{\"version\": \"0.3\"}")
 }
 
 #[get("/start")]
@@ -48,11 +50,16 @@ async fn turn(info : Path<(u64, usize)>) -> HttpResponse {
     }
 }
 
-#[get("/board/{id}/aiturn")]
-async fn ai_turn(info : Path<u64>) -> HttpResponse {
-    match Board::decode(*info) {
+#[get("/board/{id}/aiturn/{level}")]
+async fn ai_turn(info : Path<(u64, u32)>) -> HttpResponse {
+    match Board::decode(info.0.0) {
         Ok(b) => {
-            let player = Simple::new(Box::from("easy"));
+            let player : Box<dyn Player> = match info.1 {
+                0 => Box::new(Simple::new(Box::from("easy"))),
+                1 => Box::new(Deep::new(Box::from("deep1"), 1)),
+                2 => Box::new(Deep::new(Box::from("deep2"), 2)),
+                _ => Box::new(Random::new(Box::from("random")))
+            };
             let pos = player.turn(&b);
             let next_id : u64 = b.turn(pos).into();
             let url = format!("/board/{}",next_id);
